@@ -1,14 +1,19 @@
 package com.santosh.aiworkflowplatform.service.impl;
 
+import com.santosh.aiworkflowplatform.dto.request.LoginRequest;
 import com.santosh.aiworkflowplatform.dto.request.RegisterRequest;
 import com.santosh.aiworkflowplatform.dto.response.AuthResponse;
+import com.santosh.aiworkflowplatform.dto.response.JwtResponse;
+import com.santosh.aiworkflowplatform.entity.Role;
 import com.santosh.aiworkflowplatform.entity.User;
+import com.santosh.aiworkflowplatform.exception.UserAlreadyExistsException;
 import com.santosh.aiworkflowplatform.repository.UserRepository;
 import com.santosh.aiworkflowplatform.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -17,6 +22,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
 
+    private final PasswordEncoder passwordEncoder;
+
     @Override
     public AuthResponse register(RegisterRequest request) {
 
@@ -24,23 +31,30 @@ public class AuthServiceImpl implements AuthService {
                 userRepository.findByEmail(request.getEmail());
 
         if (existingUser.isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new UserAlreadyExistsException("User already exists");
         }
 
         User user = new User();
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(Role.USER);
 
-        // Set other fields if they exist in your User entity
-        // user.setRole(Role.USER);
-        // user.setCreatedAt(LocalDateTime.now());
-        // user.setUpdatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
 
         userRepository.save(user);
 
         return new AuthResponse("User registered successfully");
+    }
+
+
+
+    @Override
+    public JwtResponse login(LoginRequest request) {
+        return null;
     }
 }
 
