@@ -8,10 +8,17 @@ import com.santosh.aiworkflowplatform.entity.Role;
 import com.santosh.aiworkflowplatform.entity.User;
 import com.santosh.aiworkflowplatform.exception.UserAlreadyExistsException;
 import com.santosh.aiworkflowplatform.repository.UserRepository;
+import com.santosh.aiworkflowplatform.security.JwtService;
 import com.santosh.aiworkflowplatform.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+
+
+
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -23,6 +30,10 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtService jwtService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -54,7 +65,20 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse login(LoginRequest request) {
-        return null;
+
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getEmail(),
+                                request.getPassword()
+                        )
+                );
+
+        String token = jwtService.generateToken(
+                authentication.getName()
+        );
+
+        return new JwtResponse(token, "Bearer");
     }
 }
 
