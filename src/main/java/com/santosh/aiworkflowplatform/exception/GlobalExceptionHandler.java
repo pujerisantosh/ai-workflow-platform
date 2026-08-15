@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,12 +19,19 @@ public class GlobalExceptionHandler {
             LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleUserAlreadyExists(
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExists(
             UserAlreadyExistsException exception) {
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.CONFLICT.value(),
+                "USER_ALREADY_EXISTS",
+                exception.getMessage()
+        );
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(Map.of("message", exception.getMessage()));
+                .body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -35,7 +43,10 @@ public class GlobalExceptionHandler {
         exception.getBindingResult()
                 .getFieldErrors()
                 .forEach(error ->
-                        errors.put(error.getField(), error.getDefaultMessage())
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
                 );
 
         return ResponseEntity
