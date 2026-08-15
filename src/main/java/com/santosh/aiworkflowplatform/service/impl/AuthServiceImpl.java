@@ -12,13 +12,10 @@ import com.santosh.aiworkflowplatform.security.JwtService;
 import com.santosh.aiworkflowplatform.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-
-
-
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -28,11 +25,8 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
-
     private final AuthenticationManager authenticationManager;
-
     private final JwtService jwtService;
 
     @Override
@@ -61,8 +55,6 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse("User registered successfully");
     }
 
-
-
     @Override
     public JwtResponse login(LoginRequest request) {
 
@@ -74,11 +66,14 @@ public class AuthServiceImpl implements AuthService {
                         )
                 );
 
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow();
+
         String token = jwtService.generateToken(
-                authentication.getName()
+                authentication.getName(),
+                user.getRole().name()
         );
 
         return new JwtResponse(token, "Bearer");
     }
 }
-
