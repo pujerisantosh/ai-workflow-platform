@@ -27,13 +27,10 @@ public class AuthController {
                 .body(authService.register(request));
     }
 
-
     @PostMapping("/login")
     public JwtResponse login(
             @RequestBody LoginRequest request) {
 
         return authService.login(request);
     }
-
-
 }

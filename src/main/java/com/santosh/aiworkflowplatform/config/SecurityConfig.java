@@ -1,17 +1,18 @@
 package com.santosh.aiworkflowplatform.config;
 
+import com.santosh.aiworkflowplatform.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -20,7 +21,6 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(
@@ -31,7 +31,19 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) ->
+                response.sendError(
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "Unauthorized"
+                );
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            AuthenticationEntryPoint authenticationEntryPoint)
             throws Exception {
 
         http
@@ -47,6 +59,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                )
+
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
 
@@ -54,6 +70,11 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
+                )
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
