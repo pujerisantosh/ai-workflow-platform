@@ -21,17 +21,50 @@ public class JwtService {
 
     public String generateToken(String username) {
 
-        SecretKey key = Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
-        );
-
         return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(key)
+                .signWith(getSigningKey())
                 .compact();
-
-
     }
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+
+    private boolean isTokenExpired(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration()
+                .before(new Date());
+    }
+
+
+    public String extractUsername(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+
+
+
+    public boolean validateToken(String token, String username) {
+        String extractedUsername = extractUsername(token);
+
+        return extractedUsername.equals(username)
+                && !isTokenExpired(token);
+    }
+
+
 }
