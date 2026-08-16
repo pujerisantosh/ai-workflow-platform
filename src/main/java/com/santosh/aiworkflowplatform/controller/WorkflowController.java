@@ -2,6 +2,7 @@ package com.santosh.aiworkflowplatform.controller;
 
 import com.santosh.aiworkflowplatform.dto.request.CreateWorkflowRequest;
 import com.santosh.aiworkflowplatform.dto.request.UpdateWorkflowRequest;
+import com.santosh.aiworkflowplatform.dto.request.UpdateWorkflowStatusRequest;
 import com.santosh.aiworkflowplatform.dto.response.WorkflowResponse;
 import com.santosh.aiworkflowplatform.service.WorkflowService;
 import jakarta.validation.Valid;
@@ -65,5 +66,16 @@ public class WorkflowController {
         workflowService.deleteWorkflow(workflowId);
 
         return ResponseEntity.noContent().build();
+    }
+
+
+    @PatchMapping("/{workflowId}/status")
+    public ResponseEntity<WorkflowResponse> updateWorkflowStatus(
+            @PathVariable Long workflowId,
+            @Valid @RequestBody UpdateWorkflowStatusRequest request) {
+
+        return ResponseEntity.ok(
+                workflowService.updateWorkflowStatus(workflowId, request)
+        );
     }
 }

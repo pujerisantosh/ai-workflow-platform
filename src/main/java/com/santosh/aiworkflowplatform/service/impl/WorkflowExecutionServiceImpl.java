@@ -1,10 +1,8 @@
 package com.santosh.aiworkflowplatform.service.impl;
 
 import com.santosh.aiworkflowplatform.dto.response.WorkflowExecutionResponse;
-import com.santosh.aiworkflowplatform.entity.ExecutionStatus;
-import com.santosh.aiworkflowplatform.entity.User;
-import com.santosh.aiworkflowplatform.entity.Workflow;
-import com.santosh.aiworkflowplatform.entity.WorkflowExecution;
+import com.santosh.aiworkflowplatform.entity.*;
+import com.santosh.aiworkflowplatform.exception.WorkflowInactiveException;
 import com.santosh.aiworkflowplatform.repository.UserRepository;
 import com.santosh.aiworkflowplatform.repository.WorkflowExecutionRepository;
 import com.santosh.aiworkflowplatform.repository.WorkflowRepository;
@@ -115,6 +113,15 @@ public class WorkflowExecutionServiceImpl
         if (!isOwner) {
             throw new RuntimeException(
                     "You are not authorized to execute this workflow"
+            );
+        }
+
+
+        validateOwnership(workflow, currentUser);
+
+        if (workflow.getStatus() == WorkflowStatus.INACTIVE) {
+            throw new WorkflowInactiveException(
+                    "Workflow is inactive and cannot be executed"
             );
         }
     }

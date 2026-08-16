@@ -2,11 +2,13 @@ package com.santosh.aiworkflowplatform.service.impl;
 
 import com.santosh.aiworkflowplatform.dto.request.CreateWorkflowRequest;
 import com.santosh.aiworkflowplatform.dto.request.UpdateWorkflowRequest;
+import com.santosh.aiworkflowplatform.dto.request.UpdateWorkflowStatusRequest;
 import com.santosh.aiworkflowplatform.dto.response.WorkflowResponse;
 import com.santosh.aiworkflowplatform.entity.Role;
 import com.santosh.aiworkflowplatform.entity.User;
 import com.santosh.aiworkflowplatform.entity.Workflow;
 import com.santosh.aiworkflowplatform.entity.WorkflowStatus;
+import com.santosh.aiworkflowplatform.exception.WorkflowInactiveException;
 import com.santosh.aiworkflowplatform.repository.UserRepository;
 import com.santosh.aiworkflowplatform.repository.WorkflowRepository;
 import com.santosh.aiworkflowplatform.service.WorkflowService;
@@ -94,6 +96,28 @@ public class WorkflowServiceImpl implements WorkflowService {
         workflow.setUpdatedAt(LocalDateTime.now());
 
         Workflow updatedWorkflow = workflowRepository.save(workflow);
+
+        return toResponse(updatedWorkflow);
+    }
+
+    @Override
+    public WorkflowResponse updateWorkflowStatus(
+            Long workflowId,
+            UpdateWorkflowStatusRequest request) {
+
+        User currentUser = getCurrentUser();
+
+        Workflow workflow = workflowRepository.findById(workflowId)
+                .orElseThrow(() ->
+                        new RuntimeException("Workflow not found"));
+
+        validateOwnership(workflow, currentUser);
+
+        workflow.setStatus(request.getStatus());
+        workflow.setUpdatedAt(LocalDateTime.now());
+
+        Workflow updatedWorkflow =
+                workflowRepository.save(workflow);
 
         return toResponse(updatedWorkflow);
     }
