@@ -1,5 +1,7 @@
 package com.santosh.aiworkflowplatform.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.santosh.aiworkflowplatform.dto.response.WorkflowExecutionResponse;
 import com.santosh.aiworkflowplatform.entity.*;
 import com.santosh.aiworkflowplatform.exception.WorkflowInactiveException;
@@ -7,6 +9,7 @@ import com.santosh.aiworkflowplatform.repository.UserRepository;
 import com.santosh.aiworkflowplatform.repository.WorkflowExecutionRepository;
 import com.santosh.aiworkflowplatform.repository.WorkflowRepository;
 import com.santosh.aiworkflowplatform.service.WorkflowExecutionService;
+import com.santosh.aiworkflowplatform.workflow.WorkflowDefinition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +27,7 @@ public class WorkflowExecutionServiceImpl
     private final WorkflowRepository workflowRepository;
     private final WorkflowExecutionRepository executionRepository;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public WorkflowExecutionResponse executeWorkflow(Long workflowId) {
@@ -49,12 +53,29 @@ public class WorkflowExecutionServiceImpl
 
         try {
 
-            // Temporary execution logic.
-            // The real workflow engine will be added later.
+            WorkflowDefinition definition =
+                    parseDefinition(workflow.getDefinition());
 
-            execution.setResult(
-                    "Workflow executed successfully"
-            );
+            StringBuilder result = new StringBuilder();
+
+            definition.getSteps()
+                    .stream()
+                    .sorted((step1, step2) ->
+                            Integer.compare(
+                                    step1.getOrder(),
+                                    step2.getOrder()
+                            ))
+                    .forEach(step -> {
+
+                        result.append("Step ")
+                                .append(step.getOrder())
+                                .append(": ")
+                                .append(step.getName())
+                                .append(" executed successfully")
+                                .append(System.lineSeparator());
+                    });
+
+            execution.setResult(result.toString());
 
             execution.setStatus(ExecutionStatus.COMPLETED);
             execution.setCompletedAt(LocalDateTime.now());
@@ -66,12 +87,9 @@ public class WorkflowExecutionServiceImpl
             execution.setCompletedAt(LocalDateTime.now());
         }
 
-        execution = executionRepository.save(execution);
-
         return toResponse(execution);
+
     }
-
-
     @Override
     public List<WorkflowExecutionResponse> getExecutionHistory(Long workflowId) {
 
@@ -139,5 +157,21 @@ public class WorkflowExecutionServiceImpl
                 execution.getCompletedAt(),
                 execution.getCreatedAt()
         );
+    }
+
+
+    private WorkflowDefinition parseDefinition(String definition) {
+
+        try {
+            return objectMapper.readValue(
+                    definition,
+                    WorkflowDefinition.class
+            );
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid workflow definition",
+                    exception
+            );
+        }
     }
 }
