@@ -15,7 +15,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,7 +29,7 @@ public class WorkflowExecutionServiceImpl
     private final ObjectMapper objectMapper;
 
     @Override
-    public WorkflowExecutionResponse executeWorkflow(Long workflowId) {
+    public WorkflowExecutionResponse createExecution(Long workflowId) {
 
         User currentUser = getCurrentUser();
 
@@ -45,16 +44,33 @@ public class WorkflowExecutionServiceImpl
         WorkflowExecution execution = new WorkflowExecution();
 
         execution.setWorkflow(workflow);
-        execution.setStatus(ExecutionStatus.RUNNING);
-        execution.setStartedAt(now);
+        execution.setStatus(ExecutionStatus.PENDING);
         execution.setCreatedAt(now);
 
         execution = executionRepository.save(execution);
 
+        return toResponse(execution);
+    }
+
+    @Override
+    public void executeWorkflow(Long executionId) {
+
+        WorkflowExecution execution =
+                executionRepository.findById(executionId)
+                        .orElseThrow(() ->
+                                new RuntimeException("Execution not found"));
+
+        execution.setStatus(ExecutionStatus.RUNNING);
+        execution.setStartedAt(LocalDateTime.now());
+
+        executionRepository.save(execution);
+
         try {
 
             WorkflowDefinition definition =
-                    parseDefinition(workflow.getDefinition());
+                    parseDefinition(
+                            execution.getWorkflow().getDefinition()
+                    );
 
             StringBuilder result = new StringBuilder();
 
@@ -76,7 +92,6 @@ public class WorkflowExecutionServiceImpl
                     });
 
             execution.setResult(result.toString());
-
             execution.setStatus(ExecutionStatus.COMPLETED);
             execution.setCompletedAt(LocalDateTime.now());
 
@@ -87,11 +102,12 @@ public class WorkflowExecutionServiceImpl
             execution.setCompletedAt(LocalDateTime.now());
         }
 
-        return toResponse(execution);
-
+        executionRepository.save(execution);
     }
+
     @Override
-    public List<WorkflowExecutionResponse> getExecutionHistory(Long workflowId) {
+    public List<WorkflowExecutionResponse> getExecutionHistory(
+            Long workflowId) {
 
         User currentUser = getCurrentUser();
 
@@ -134,9 +150,6 @@ public class WorkflowExecutionServiceImpl
             );
         }
 
-
-        validateOwnership(workflow, currentUser);
-
         if (workflow.getStatus() == WorkflowStatus.INACTIVE) {
             throw new WorkflowInactiveException(
                     "Workflow is inactive and cannot be executed"
@@ -158,7 +171,6 @@ public class WorkflowExecutionServiceImpl
                 execution.getCreatedAt()
         );
     }
-
 
     private WorkflowDefinition parseDefinition(String definition) {
 

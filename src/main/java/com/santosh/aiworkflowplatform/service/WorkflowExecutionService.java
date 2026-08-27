@@ -6,7 +6,9 @@ import java.util.List;
 
 public interface WorkflowExecutionService {
 
-    WorkflowExecutionResponse executeWorkflow(Long workflowId);
+    WorkflowExecutionResponse createExecution(Long workflowId);
+
+    void executeWorkflow(Long executionId);
 
     List<WorkflowExecutionResponse> getExecutionHistory(Long workflowId);
 }

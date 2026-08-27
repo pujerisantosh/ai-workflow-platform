@@ -20,7 +20,7 @@ public class WorkflowExecutionController {
             @PathVariable Long workflowId) {
 
         return ResponseEntity.ok(
-                workflowExecutionService.executeWorkflow(workflowId)
+                workflowExecutionService.createExecution(workflowId)
         );
     }
 
