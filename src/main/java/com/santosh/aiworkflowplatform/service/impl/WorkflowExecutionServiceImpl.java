@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import com.santosh.aiworkflowplatform.kafka.WorkflowExecutionProducer;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +28,7 @@ public class WorkflowExecutionServiceImpl
     private final WorkflowExecutionRepository executionRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final WorkflowExecutionProducer workflowExecutionProducer;
 
     @Override
     public WorkflowExecutionResponse createExecution(Long workflowId) {
@@ -48,6 +50,7 @@ public class WorkflowExecutionServiceImpl
         execution.setCreatedAt(now);
 
         execution = executionRepository.save(execution);
+        workflowExecutionProducer.publish(execution.getId());
 
         return toResponse(execution);
     }
